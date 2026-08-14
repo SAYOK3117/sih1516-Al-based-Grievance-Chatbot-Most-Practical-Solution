@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-primary: #1E4B8C;
+  --color-primary-hover: #16386b;
+  --color-accent: #1E9E7C;
+  --color-alert: #D9534F;
+  --color-warning: #E8A33D;
+  
+  --color-bg-light: #F7F9FC;
+  --color-bg-dark: #0F1620;
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #1A2332;
+  
+  --color-text-light: #1f2937;
+  --color-text-light-muted: #4b5563;
+  --color-text-dark: #f3f4f6;
+  --color-text-dark-muted: #9ca3af;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply bg-[var(--color-bg-light)] text-[var(--color-text-light)] antialiased transition-colors duration-200;
+    font-family: var(--font-sans);
+  }
+  
+  .dark body {
+    @apply bg-[var(--color-bg-dark)] text-[var(--color-text-dark)];
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+  
+  .dark .glass {
+    @apply bg-[#1A2332]/80 border-white/10 shadow-none;
+  }
+
+  .card {
+    @apply bg-[var(--color-surface-light)] rounded-[12px] shadow-sm transition-all duration-200 border border-gray-100;
+  }
+  
+  .dark .card {
+    @apply bg-[var(--color-surface-dark)] border-gray-800 shadow-none;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white rounded-[8px] font-medium transition-colors duration-200 hover:bg-primary-hover active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-primary text-primary rounded-[8px] font-medium transition-colors duration-200 hover:bg-primary hover:text-white active:scale-95;
+  }
+  
+  .dark .btn-outline {
+    @apply border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white;
+  }
+}
+
+/* Animations */
+@keyframes slide-in-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-fade 0.4s ease-out forwards;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Lenis recommended css */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
