@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight, User, Briefcase, Globe } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 
+type Role = 'citizen' | 'admin' | 'super_admin' | null;
+
 export function LoginPage() {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'role' | 'phone' | 'otp'>('role');
+  const [selectedRole, setSelectedRole] = useState<Role>(null);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +21,12 @@ export function LoginPage() {
       otpRefs.current[0]?.focus();
     }
   }, [step]);
+
+  const handleRoleSelect = (role: Role, defaultPhone: string) => {
+    setSelectedRole(role);
+    setPhone(defaultPhone);
+    setStep('phone');
+  };
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +40,9 @@ export function LoginPage() {
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
-
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // Only keep the last character typed
+    newOtp[index] = value.slice(-1);
     setOtp(newOtp);
-
-    // Auto-focus next input
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
@@ -56,10 +62,16 @@ export function LoginPage() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      // For demo, if phone is 9999999999, go to admin, else citizen
-      if (phone === '9999999999') {
+      
+      // Role session
+      if (phone === '7777777777') {
+        localStorage.setItem('suvas_user_role', 'super_admin');
+        navigate('/super-admin');
+      } else if (phone === '9999999999') {
+        localStorage.setItem('suvas_user_role', 'admin');
         navigate('/admin');
       } else {
+        localStorage.setItem('suvas_user_role', 'citizen');
         navigate('/dashboard');
       }
     }, 1200);
@@ -78,15 +90,60 @@ export function LoginPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{step === 'phone' ? 'Enter Mobile Number' : 'Verify OTP'}</CardTitle>
+            <CardTitle>
+              {step === 'role' ? 'Select Role' : step === 'phone' ? 'Enter Mobile Number' : 'Verify OTP'}
+            </CardTitle>
             <CardDescription>
-              {step === 'phone' 
+              {step === 'role' 
+                ? 'Choose your login profile'
+                : step === 'phone' 
                 ? 'We will send a 6-digit One Time Password to this number.' 
                 : `Enter the OTP sent to +91 ${phone}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'phone' ? (
+            {step === 'role' ? (
+              <div className="space-y-4">
+                <button 
+                  onClick={() => handleRoleSelect('citizen', '8888888888')}
+                  className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary dark:hover:border-primary transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mr-4 shrink-0">
+                    <User size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Citizen</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Submit and track grievances</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => handleRoleSelect('admin', '9999999999')}
+                  className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary dark:hover:border-primary transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 mr-4 shrink-0">
+                    <Briefcase size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Admin</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Manage and resolve assigned grievances</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => handleRoleSelect('super_admin', '7777777777')}
+                  className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary dark:hover:border-primary transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mr-4 shrink-0">
+                    <Globe size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Super Admin</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Nationwide monitoring, escalation and administration</p>
+                  </div>
+                </button>
+              </div>
+            ) : step === 'phone' ? (
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="phone" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -112,9 +169,13 @@ export function LoginPage() {
                 </Button>
                 <div className="text-center mt-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Admin Demo: Use <span className="font-semibold">9999999999</span><br/>
-                    Customer Demo: Use <span className="font-semibold">8888888888</span>
+                    {selectedRole === 'super_admin' && <span>Super Admin Demo: Use <span className="font-semibold">7777777777</span></span>}
+                    {selectedRole === 'admin' && <span>Admin Demo: Use <span className="font-semibold">9999999999</span></span>}
+                    {selectedRole === 'citizen' && <span>Citizen Demo: Use <span className="font-semibold">8888888888</span></span>}
                   </p>
+                  <button type="button" onClick={() => setStep('role')} className="mt-3 text-sm text-primary dark:text-blue-400 font-medium hover:underline">
+                    Back to Roles
+                  </button>
                 </div>
               </form>
             ) : (
