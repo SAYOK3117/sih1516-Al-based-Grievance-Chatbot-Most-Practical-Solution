@@ -1,4 +1,4 @@
-import type { Admin, Grievance } from './store';
+import type { Admin } from './store';
 
 export const DEMO_VERSION = 'v1_rich_dataset';
 
@@ -228,9 +228,9 @@ export const initialAdmins: Admin[] = [
     "averageResolutionHours": 27,
     "slaCompliance": 99
   }
-];
+] as any[];
 
-export const initialGrievances: Grievance[] = [
+export const initialGrievances: any[] = [
   {
     "id": "GRV-10001",
     "title": "Transformer explosion causing area-wide blackout",

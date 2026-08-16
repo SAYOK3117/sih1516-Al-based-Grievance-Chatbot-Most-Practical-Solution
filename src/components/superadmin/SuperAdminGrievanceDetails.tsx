@@ -165,8 +165,8 @@ export function SuperAdminGrievanceDetails({
               </h4>
               {grievance.assignedAdminId ? (
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{grievance.assignedAdminName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Admin ID: {grievance.assignedAdminId}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{grievance.assignedAdminName || 'Department Officer'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{grievance.dept}</p>
                 </div>
               ) : (
                 <p className="text-sm font-bold text-orange-600 dark:text-orange-400">

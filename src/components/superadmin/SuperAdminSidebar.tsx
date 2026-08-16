@@ -23,7 +23,7 @@ export function SuperAdminSidebar({ onLogout }: { onLogout: () => void }) {
         <span className="font-bold text-xl text-gray-900 dark:text-white truncate">Nagrik Setu</span>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-4">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -43,9 +43,9 @@ export function SuperAdminSidebar({ onLogout }: { onLogout: () => void }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-400 font-bold">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-400 font-bold text-sm shrink-0">
             SA
           </div>
           <div className="overflow-hidden">
@@ -53,6 +53,7 @@ export function SuperAdminSidebar({ onLogout }: { onLogout: () => void }) {
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Command Center</p>
           </div>
         </div>
+
         <Button variant="outline" onClick={onLogout} className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/20">
           <LogOut size={18} className="mr-2" /> Logout
         </Button>

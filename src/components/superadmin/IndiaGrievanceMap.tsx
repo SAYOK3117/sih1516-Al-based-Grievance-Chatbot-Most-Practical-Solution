@@ -26,8 +26,8 @@ export function IndiaGrievanceMap() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedGrievanceId, setSelectedGrievanceId] = useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
@@ -43,9 +43,11 @@ export function IndiaGrievanceMap() {
     
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height || 600
+        setDimensions(prev => {
+          const newWidth = entry.contentRect.width;
+          const newHeight = entry.contentRect.height || 600;
+          if (prev.width === newWidth && prev.height === newHeight) return prev;
+          return { width: newWidth, height: newHeight };
         });
       }
     });
@@ -107,16 +109,83 @@ export function IndiaGrievanceMap() {
     return '#7c3aed'; 
   };
 
-  const handleMouseMove = (e: React.MouseEvent, stateName: string) => {
-    setHoveredState(stateName);
-    if (containerRef.current) {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (tooltipRef.current && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      setTooltipPos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
+      tooltipRef.current.style.transform = `translate(${e.clientX - rect.left + 15}px, ${e.clientY - rect.top + 15}px)`;
     }
   };
+
+
+
+  // Use projection to automatically fit and center the path to our container width/height
+  const { projection: _projection, pathGenerator } = useMemo(() => {
+    if (!geoData) return { projection: null, pathGenerator: null };
+    const proj = geoMercator().fitSize([dimensions.width, dimensions.height], geoData);
+    return {
+      projection: proj,
+      pathGenerator: geoPath().projection(proj)
+    };
+  }, [dimensions.width, dimensions.height, geoData]);
+
+  const features = geoData?.features || [];
+
+  const mapContent = useMemo(() => {
+    if (dimensions.width <= 0 || !geoData || !pathGenerator) return null;
+    return (
+      <>
+        <svg viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 drop-shadow-sm">
+          <g>
+            {features.map((feature: any) => {
+              const rawName = feature.properties.NAME_1 || feature.properties.name || 'Unknown';
+              const normName = normalizeStateName(rawName);
+              const isSelected = selectedState === rawName;
+              
+              return (
+                <path
+                  key={rawName}
+                  d={pathGenerator(feature) || ''}
+                  className="transition-all duration-300 cursor-pointer outline-none"
+                  style={{
+                    stroke: isSelected ? '#581c87' : 'rgba(156, 163, 175, 0.4)',
+                    strokeWidth: isSelected ? 2 : 1,
+                  }}
+                  onClick={() => { setSelectedState(rawName); setSelectedDistrict(null); }}
+                  onMouseEnter={() => setHoveredState(rawName)}
+                  onMouseLeave={() => setHoveredState(null)}
+                  data-state={normName}
+                />
+              );
+            })}
+          </g>
+        </svg>
+        
+        <style>{`
+          ${features.map((f: any) => {
+            const rawName = f.properties.NAME_1 || f.properties.name || '';
+            const normName = normalizeStateName(rawName);
+            const stat = stateStats[normName];
+            const isSelected = selectedState === rawName;
+            
+            return `
+              path[data-state="${normName}"] {
+                fill: ${isSelected ? '#c084fc' : getStateColor(stat)};
+              }
+              .dark path[data-state="${normName}"] {
+                fill: ${isSelected ? '#8b5cf6' : getDarkStateColor(stat)};
+              }
+              path[data-state="${normName}"]:hover {
+                fill: #d8b4fe !important;
+              }
+              .dark path[data-state="${normName}"]:hover {
+                fill: #a855f7 !important;
+              }
+            `;
+          }).join('\n')}
+        `}</style>
+      </>
+    );
+  }, [dimensions.width, dimensions.height, features, selectedState, stateStats, pathGenerator, geoData]);
 
   if (!geoData) {
     return (
@@ -128,12 +197,6 @@ export function IndiaGrievanceMap() {
       </Card>
     );
   }
-
-  // Use projection to automatically fit and center the path to our container width/height
-  const projection = geoMercator().fitSize([dimensions.width, dimensions.height], geoData);
-  const pathGenerator = geoPath().projection(projection);
-
-  const features = geoData.features;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -172,91 +235,44 @@ export function IndiaGrievanceMap() {
           )}
         </div>
 
-        <div className="flex-1 relative min-h-[600px] w-full" ref={containerRef}>
-          {dimensions.width > 0 && (
-            <>
-              <svg viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 drop-shadow-sm">
-                <g>
-                  {features.map((feature: any) => {
-                    const rawName = feature.properties.NAME_1 || feature.properties.name || 'Unknown';
-                    const normName = normalizeStateName(rawName);
-                    const isSelected = selectedState === rawName;
-                    
-                    return (
-                      <path
-                        key={rawName}
-                        d={pathGenerator(feature) || ''}
-                        className="transition-all duration-300 cursor-pointer outline-none"
-                        style={{
-                          stroke: isSelected ? '#581c87' : 'rgba(156, 163, 175, 0.4)',
-                          strokeWidth: isSelected ? 2 : 1,
-                        }}
-                        onClick={() => { setSelectedState(rawName); setSelectedDistrict(null); }}
-                        onMouseEnter={(e) => handleMouseMove(e, rawName)}
-                        onMouseMove={(e) => handleMouseMove(e, rawName)}
-                        onMouseLeave={() => setHoveredState(null)}
-                        data-state={normName}
-                      />
-                    );
-                  })}
-                </g>
-              </svg>
-              
-              <style>{`
-                ${features.map((f: any) => {
-                  const rawName = f.properties.NAME_1 || f.properties.name || '';
-                  const normName = normalizeStateName(rawName);
-                  const stat = stateStats[normName];
-                  const isSelected = selectedState === rawName;
-                  
-                  return `
-                    path[data-state="${normName}"] {
-                      fill: ${isSelected ? '#c084fc' : getStateColor(stat)};
-                    }
-                    .dark path[data-state="${normName}"] {
-                      fill: ${isSelected ? '#8b5cf6' : getDarkStateColor(stat)};
-                    }
-                    path[data-state="${normName}"]:hover {
-                      fill: #d8b4fe !important;
-                    }
-                    .dark path[data-state="${normName}"]:hover {
-                      fill: #a855f7 !important;
-                    }
-                  `;
-                }).join('\n')}
-              `}</style>
-            </>
-          )}
+        <div 
+          className="flex-1 relative min-h-[600px] w-full" 
+          ref={containerRef}
+          onMouseMove={handleMouseMove}
+        >
+          {mapContent}
 
-          {hoveredState && (
-            <div 
-              className="absolute z-50 pointer-events-none bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl p-4 min-w-[200px] transition-opacity duration-150"
-              style={{ left: tooltipPos.x + 15, top: tooltipPos.y + 15 }}
-            >
-              <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-sm mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
-                {hoveredState}
-              </h4>
-              
-              {(() => {
-                const normName = normalizeStateName(hoveredState);
-                const stat = stateStats[normName];
+          <div 
+            ref={tooltipRef}
+            className={`absolute top-0 left-0 z-50 pointer-events-none bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl p-4 min-w-[200px] transition-opacity duration-150 ${hoveredState ? 'opacity-100' : 'opacity-0'}`}
+          >
+            {hoveredState && (
+              <>
+                <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-wider text-sm mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+                  {hoveredState}
+                </h4>
                 
-                if (!stat || stat.total === 0) {
-                  return <p className="text-sm text-gray-500 dark:text-gray-400">No active grievances recorded.</p>;
-                }
-                
-                return (
-                  <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total Grievances:</span> <span className="font-semibold text-gray-900 dark:text-white">{stat.total}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Active:</span> <span className="font-semibold text-purple-600 dark:text-purple-400">{stat.active}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Resolved:</span> <span className="font-semibold text-green-600 dark:text-green-400">{stat.resolved}</span></div>
-                    {stat.overdue > 0 && <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Overdue:</span> <span className="font-semibold text-red-600 dark:text-red-400">{stat.overdue}</span></div>}
-                    {stat.critical > 0 && <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Critical:</span> <span className="font-semibold text-orange-600 dark:text-orange-400">{stat.critical}</span></div>}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+                {(() => {
+                  const normName = normalizeStateName(hoveredState);
+                  const stat = stateStats[normName];
+                  
+                  if (!stat || stat.total === 0) {
+                    return <p className="text-sm text-gray-500 dark:text-gray-400">No active grievances recorded.</p>;
+                  }
+                  
+                  return (
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total Grievances:</span> <span className="font-semibold text-gray-900 dark:text-white">{stat.total}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Active:</span> <span className="font-semibold text-purple-600 dark:text-purple-400">{stat.active}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Resolved:</span> <span className="font-semibold text-green-600 dark:text-green-400">{stat.resolved}</span></div>
+                      {stat.overdue > 0 && <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Overdue:</span> <span className="font-semibold text-red-600 dark:text-red-400">{stat.overdue}</span></div>}
+                      {stat.critical > 0 && <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Critical:</span> <span className="font-semibold text-orange-600 dark:text-orange-400">{stat.critical}</span></div>}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
           
           <MapLegend />
         </div>

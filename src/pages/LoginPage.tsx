@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Shield, ArrowRight, User, Briefcase, Globe } from 'lucide-react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { Shield, ArrowRight, User, Briefcase, Globe, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -15,6 +15,10 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fromPath = (location.state as any)?.from?.pathname || null;
+  const isFromFileGrievance = fromPath === '/file-grievance';
 
   useEffect(() => {
     if (step === 'otp') {
@@ -69,10 +73,37 @@ export function LoginPage() {
         navigate('/super-admin');
       } else if (phone === '9999999999') {
         localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({
+          id: "11111",
+          department: "UPPCL / Electricity Department",
+          otp: "123456",
+          role: "Department Administrator"
+        }));
+        navigate('/admin');
+      } else if (phone === '1111111111') {
+        localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({ id: "11111", department: "UPPCL / Electricity Department", otp: "123456", role: "Department Administrator" }));
+        navigate('/admin');
+      } else if (phone === '2222222222') {
+        localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({ id: "22222", department: "PWD", otp: "234567", role: "Department Administrator" }));
+        navigate('/admin');
+      } else if (phone === '3333333333') {
+        localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({ id: "33333", department: "Water Works / Jal Sansthan", otp: "345678", role: "Department Administrator" }));
+        navigate('/admin');
+      } else if (phone === '4444444444') {
+        localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({ id: "44444", department: "Cyber Cell", otp: "456789", role: "Department Administrator" }));
+        navigate('/admin');
+      } else if (phone === '5555555555') {
+        localStorage.setItem('suvas_user_role', 'admin');
+        localStorage.setItem('loggedInAdmin', JSON.stringify({ id: "55555", department: "District Magistrate (DM)", otp: "567890", role: "District Magistrate / Admin" }));
         navigate('/admin');
       } else {
         localStorage.setItem('suvas_user_role', 'citizen');
-        navigate('/dashboard');
+        const target = fromPath || '/file-grievance';
+        navigate(target, { replace: true });
       }
     }, 1200);
   };
@@ -85,8 +116,19 @@ export function LoginPage() {
             <Shield size={28} />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome to Nagrik Setu</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Login to track your grievances or file a new one.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            {isFromFileGrievance 
+              ? 'Please login as a Citizen to file your grievance.' 
+              : 'Login to track your grievances or file a new one.'}
+          </p>
         </div>
+
+        {isFromFileGrievance && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Citizen login required before filing a complaint. Please proceed to login below.</span>
+          </div>
+        )}
 
         <Card>
           <CardHeader>

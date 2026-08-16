@@ -1,14 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, AlertTriangle, ShieldAlert, Info, Check, ExternalLink } from 'lucide-react';
+import { Bell, AlertTriangle, ShieldAlert, Info, Check, Sun, Moon } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { deriveNotifications } from '../../lib/superAdminAlerts';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export function SuperAdminHeader() {
   const navigate = useNavigate();
   const { grievances, admins, escalations, readNotificationIds, markNotificationAsRead, markAllNotificationsAsRead } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Dark mode state
+  const [isDark, setIsDark] = useState(() => {
+    return document.documentElement.classList.contains('dark') || 
+           localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+    setIsDark(isDarkMode);
+    if (isDarkMode && !document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleDark = () => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    } else {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDark(true);
+    }
+  };
 
   const notifications = deriveNotifications(grievances, admins, escalations, readNotificationIds);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -26,12 +53,6 @@ export function SuperAdminHeader() {
   const handleNotificationClick = (notif: typeof notifications[0]) => {
     markNotificationAsRead(notif.id);
     setIsOpen(false);
-    
-    // Simple routing logic.
-    // If it's grievance-related, the full notifications page handles opening the modal.
-    // For now, redirecting to the notifications page is simplest, or if the user is already there, it could open.
-    // Let's route to the full notifications page which will handle deep-linking if implemented, 
-    // or just let them manage it there.
     navigate('/super-admin/notifications');
   };
 
@@ -47,10 +68,26 @@ export function SuperAdminHeader() {
         <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mt-1">Super Admin • Nationwide Monitoring & Control</p>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDark}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label="Toggle theme"
+          className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors flex items-center justify-center"
+        >
+          {isDark ? (
+            <Sun size={20} className="text-amber-400 hover:rotate-45 transition-transform" />
+          ) : (
+            <Moon size={20} className="text-gray-600 dark:text-gray-300 hover:-rotate-12 transition-transform" />
+          )}
+        </button>
+
+        {/* Notifications Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setIsOpen(!isOpen)}
+            aria-label="Notifications"
             className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors relative"
           >
             <Bell size={22} />
@@ -100,34 +137,28 @@ export function SuperAdminHeader() {
                              <Info size={16} />}
                           </div>
                           <div className="flex-1">
-                            <h4 className={`text-sm font-semibold mb-0.5 ${!notif.read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {notif.title}
-                            </h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                              {notif.message}
-                            </p>
-                            <span className="text-[10px] text-gray-400 mt-2 block font-medium">
-                              {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-semibold text-gray-900 dark:text-white">{notif.title}</p>
+                              <span className="text-[10px] text-gray-400">
+                                {notif.timestamp.includes('T') ? new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : notif.timestamp}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{notif.message}</p>
                           </div>
-                          {!notif.read && (
-                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              
-              <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#0F1620]">
-                <Link 
-                  to="/super-admin/notifications"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full py-1.5 text-xs font-bold text-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-1 transition-colors"
+
+              <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#0F1620] text-center">
+                <button 
+                  onClick={() => { setIsOpen(false); navigate('/super-admin/notifications'); }}
+                  className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                 >
-                  View all notifications <ExternalLink size={12} />
-                </Link>
+                  View all operational alerts →
+                </button>
               </div>
             </div>
           )}

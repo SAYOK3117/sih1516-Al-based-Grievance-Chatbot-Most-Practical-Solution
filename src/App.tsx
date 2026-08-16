@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
+import { AdminNavbar } from './components/layout/AdminNavbar';
 import { MobileTabNav } from './components/layout/MobileTabNav';
 import { Footer } from './components/layout/Footer';
 import { ChatbotWidget } from './components/layout/ChatbotWidget';
@@ -41,7 +42,7 @@ function AdminLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-[#0F1620]">
       <ScrollProgress />
-      <Navbar />
+      <AdminNavbar />
       <main className="flex-1">
         <Outlet />
       </main>
@@ -55,8 +56,9 @@ function SuperAdminLayout() {
 
 function ProtectedRoute({ allowedRole, children }: { allowedRole: string, children: React.ReactNode }) {
   const role = localStorage.getItem('suvas_user_role');
+  const location = useLocation();
   if (role !== allowedRole) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   return <>{children}</>;
 }
@@ -69,7 +71,11 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/file-grievance" element={<FileGrievancePage />} />
+            <Route path="/file-grievance" element={
+              <ProtectedRoute allowedRole="citizen">
+                <FileGrievancePage />
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute allowedRole="citizen">
                 <CitizenDashboard />

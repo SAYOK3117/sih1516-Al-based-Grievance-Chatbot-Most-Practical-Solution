@@ -1,15 +1,21 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../lib/store';
+import { useStore, type Grievance } from '../lib/store';
 import { getSLAStatus } from '../lib/slaUtils';
 import { SuperAdminSidebar } from '../components/superadmin/SuperAdminSidebar';
 import { SuperAdminHeader } from '../components/superadmin/SuperAdminHeader';
 import { IndiaGrievanceMap } from '../components/superadmin/IndiaGrievanceMap';
 import { FileText, Clock, CheckCircle2, Activity } from 'lucide-react';
 import { KpiCard } from '../components/superadmin/KpiCard';
+import { KpiGrievanceDrawer, type KpiFilterType } from '../components/superadmin/KpiGrievanceDrawer';
+import { SuperAdminGrievanceDetails } from '../components/superadmin/SuperAdminGrievanceDetails';
 
 export function SuperAdminIndiaMap() {
   const navigate = useNavigate();
-  const { grievances } = useStore();
+  const { grievances, admins } = useStore();
+
+  const [selectedKpi, setSelectedKpi] = useState<KpiFilterType | null>(null);
+  const [selectedGrievance, setSelectedGrievance] = useState<Grievance | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem('suvas_user_role');
@@ -45,30 +51,53 @@ export function SuperAdminIndiaMap() {
               value={totalGrievances} 
               icon={FileText} 
               colorClass="text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30"
+              onClick={() => setSelectedKpi('all')}
             />
             <KpiCard 
               title="Active" 
               value={activeGrievances} 
               icon={Activity} 
               colorClass="text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30"
+              onClick={() => setSelectedKpi('active')}
             />
             <KpiCard 
               title="Resolved" 
               value={resolvedGrievances} 
               icon={CheckCircle2} 
               colorClass="text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30"
+              onClick={() => setSelectedKpi('resolved')}
             />
             <KpiCard 
               title="Overdue" 
               value={overdueGrievances} 
               icon={Clock} 
               colorClass="text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30"
+              onClick={() => setSelectedKpi('overdue')}
             />
           </div>
 
           <IndiaGrievanceMap />
         </main>
       </div>
+
+      {/* KPI Grievance Side Drawer */}
+      {selectedKpi && (
+        <KpiGrievanceDrawer
+          type={selectedKpi}
+          onClose={() => setSelectedKpi(null)}
+          onSelectGrievance={(g) => setSelectedGrievance(g)}
+          grievances={grievances}
+          admins={admins}
+        />
+      )}
+
+      {/* Full Grievance Detail Drawer */}
+      {selectedGrievance && (
+        <SuperAdminGrievanceDetails
+          grievance={selectedGrievance}
+          onClose={() => setSelectedGrievance(null)}
+        />
+      )}
     </div>
   );
 }
