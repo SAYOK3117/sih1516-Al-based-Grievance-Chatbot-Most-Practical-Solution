@@ -5,6 +5,7 @@ import { MobileTabNav } from './components/layout/MobileTabNav';
 import { Footer } from './components/layout/Footer';
 import { ChatbotWidget } from './components/layout/ChatbotWidget';
 import { ScrollProgress } from './components/ui/ScrollProgress';
+import { CustomCursor } from './components/ui/CustomCursor';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -66,6 +67,7 @@ function ProtectedRoute({ allowedRole, children }: { allowedRole: string, childr
 function App() {
   return (
     <StoreProvider>
+      <CustomCursor />
       <BrowserRouter>
         <Routes>
           <Route element={<MainLayout />}>
