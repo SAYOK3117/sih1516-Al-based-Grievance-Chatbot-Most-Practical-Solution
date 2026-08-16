@@ -1,39 +1,56 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function CustomCursor() {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isClicked, setIsClicked] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
 
-  const mousePos = useRef({ x: -100, y: -100 });
-  const ringPos = useRef({ x: -100, y: -100 });
-  const rafId = useRef<number | null>(null);
-
   useEffect(() => {
-    // Only enable on desktop pointer devices
-    if (window.matchMedia('(pointer: coarse)').matches) {
+    // Check if device supports fine hover pointer
+    if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) {
       return;
     }
 
-    const onMouseMove = (e: MouseEvent) => {
-      mousePos.current = { x: e.clientX, y: e.clientY };
-      if (!isVisible) setIsVisible(true);
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let targetScale = 1;
+    let currentScale = 1;
+    let isVisible = false;
+    let isHovering = false;
+    let isMouseDown = false;
+    let rafId: number;
 
-      // Check if hovering over clickable element
+    const onMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!isVisible) {
+        isVisible = true;
+        ringX = mouseX;
+        ringY = mouseY;
+      }
+
       const target = e.target as HTMLElement | null;
       if (target) {
-        const isClickable = !!target.closest('button, a, input, textarea, select, [role="button"], .cursor-pointer, [data-cursor="pointer"]');
-        setIsHovered(isClickable);
+        isHovering = !!target.closest('button, a, input, textarea, select, [role="button"], .cursor-pointer, [data-cursor="pointer"]');
       }
     };
 
-    const onMouseDown = () => setIsClicked(true);
-    const onMouseUp = () => setIsClicked(false);
-    const onMouseLeave = () => setIsVisible(false);
-    const onMouseEnter = () => setIsVisible(true);
+    const onMouseDown = () => {
+      isMouseDown = true;
+    };
+
+    const onMouseUp = () => {
+      isMouseDown = false;
+    };
+
+    const onMouseLeave = () => {
+      isVisible = false;
+    };
+
+    const onMouseEnter = () => {
+      isVisible = true;
+    };
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mousedown', onMouseDown);
@@ -41,23 +58,47 @@ export function CustomCursor() {
     document.addEventListener('mouseleave', onMouseLeave);
     document.addEventListener('mouseenter', onMouseEnter);
 
-    // Smooth lerp animation loop for trailing ring
-    const animate = () => {
-      const ease = 0.18; // smooth lag factor
-      ringPos.current.x += (mousePos.current.x - ringPos.current.x) * ease;
-      ringPos.current.y += (mousePos.current.y - ringPos.current.y) * ease;
+    const render = () => {
+      // Faster, responsive follow so the dot and ring never drift apart
+      const ease = isMouseDown ? 0.5 : isHovering ? 0.35 : 0.25;
+      ringX += (mouseX - ringX) * ease;
+      ringY += (mouseY - ringY) * ease;
 
+      // Target scale calculation for smooth morphing
+      if (isMouseDown) {
+        targetScale = 0.75;
+      } else if (isHovering) {
+        targetScale = 1.45;
+      } else {
+        targetScale = 1.0;
+      }
+
+      currentScale += (targetScale - currentScale) * 0.25;
+
+      // Update inner dot (exact coordinates)
       if (dotRef.current) {
-        dotRef.current.style.transform = `translate3d(${mousePos.current.x}px, ${mousePos.current.y}px, 0) translate(-50%, -50%)`;
-      }
-      if (ringRef.current) {
-        ringRef.current.style.transform = `translate3d(${ringPos.current.x}px, ${ringPos.current.y}px, 0) translate(-50%, -50%) scale(${isClicked ? 0.8 : isHovered ? 1.5 : 1})`;
+        dotRef.current.style.opacity = isVisible ? '1' : '0';
+        dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%) scale(${isMouseDown ? 0.6 : isHovering ? 0.75 : 1})`;
       }
 
-      rafId.current = requestAnimationFrame(animate);
+      // Update outer ring (interpolated position and scale)
+      if (ringRef.current) {
+        ringRef.current.style.opacity = isVisible ? '1' : '0';
+        ringRef.current.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${currentScale})`;
+        
+        if (isHovering) {
+          ringRef.current.style.backgroundColor = 'rgba(147, 51, 234, 0.15)';
+          ringRef.current.style.borderColor = 'rgba(147, 51, 234, 0.9)';
+        } else {
+          ringRef.current.style.backgroundColor = 'transparent';
+          ringRef.current.style.borderColor = 'rgba(147, 51, 234, 0.5)';
+        }
+      }
+
+      rafId = requestAnimationFrame(render);
     };
 
-    rafId.current = requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
@@ -65,37 +106,49 @@ export function CustomCursor() {
       window.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('mouseleave', onMouseLeave);
       document.removeEventListener('mouseenter', onMouseEnter);
-      if (rafId.current) cancelAnimationFrame(rafId.current);
+      cancelAnimationFrame(rafId);
     };
-  }, [isVisible, isHovered, isClicked]);
-
-  // Don't render on touch/coarse devices
-  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
-    return null;
-  }
+  }, []);
 
   return (
     <>
-      {/* Center Precision Dot */}
+      {/* Precision Center Dot */}
       <div
         ref={dotRef}
         aria-hidden="true"
-        className={`fixed top-0 left-0 w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400 pointer-events-none z-[99999] transition-opacity duration-200 shadow-xs ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        } ${isHovered ? 'scale-75' : 'scale-100'}`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          backgroundColor: '#9333ea',
+          pointerEvents: 'none',
+          zIndex: 99999,
+          willChange: 'transform, opacity',
+          opacity: 0,
+        }}
       />
 
-      {/* Smooth Trailing Ring */}
+      {/* Synchronized Outer Ring */}
       <div
         ref={ringRef}
         aria-hidden="true"
-        className={`fixed top-0 left-0 w-8 h-8 rounded-full border-2 border-purple-500/70 dark:border-purple-400/80 pointer-events-none z-[99998] transition-[opacity,border-color,background-color] duration-200 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        } ${
-          isHovered 
-            ? 'bg-purple-500/15 dark:bg-purple-400/20 border-purple-600 dark:border-purple-300' 
-            : 'bg-transparent'
-        }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          border: '1.5px solid rgba(147, 51, 234, 0.5)',
+          backgroundColor: 'transparent',
+          pointerEvents: 'none',
+          zIndex: 99998,
+          willChange: 'transform, opacity, background-color, border-color',
+          opacity: 0,
+        }}
       />
     </>
   );
