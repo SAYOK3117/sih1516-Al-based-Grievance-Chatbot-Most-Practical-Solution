@@ -93,6 +93,10 @@ export function AdminDashboard() {
     }
 
     return true;
+  }).sort((a, b) => {
+    if (a.status === 'Resolved' && b.status !== 'Resolved') return 1;
+    if (a.status !== 'Resolved' && b.status === 'Resolved') return -1;
+    return 0;
   });
 
   const selectedComplaint = baseGrievances.find(g => g.id === selectedComplaintId);
@@ -423,6 +427,11 @@ export function AdminDashboard() {
                           <Badge variant={c.priority === 'Critical' || c.priority === 'High' ? 'alert' : c.priority === 'Medium' ? 'warning' : 'primary'}>
                             {c.priority} Priority
                           </Badge>
+                          {c.status === 'Resolved' && (
+                            <Badge variant="success" className="text-[10px]">
+                              Resolved
+                            </Badge>
+                          )}
                           {c.escalatedToDM && <EscalationBadge showDetails={false} />}
                           {c.masterIssueId && (
                             <Badge variant="warning" className="text-[10px]">

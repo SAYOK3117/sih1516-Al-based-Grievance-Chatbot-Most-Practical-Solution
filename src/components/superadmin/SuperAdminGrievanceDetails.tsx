@@ -195,8 +195,32 @@ export function SuperAdminGrievanceDetails({
                 'text-gray-900 dark:text-white'
               }`}>{slaText}</div>
             </div>
-            
           </div>
+          
+          {/* Citizen Feedback */}
+          {grievance.feedback && (
+            <div className="bg-purple-50 dark:bg-[#1A2332] border border-purple-100 dark:border-gray-800 p-5 rounded-lg shadow-sm">
+              <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">
+                Citizen Feedback
+              </h4>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl mt-1">
+                  {grievance.feedback.rating === 'Satisfied' ? '😊' : grievance.feedback.rating === 'Good' ? '😐' : '😠'}
+                </span>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white">Rated: {grievance.feedback.rating}</p>
+                  {grievance.feedback.comments && (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 italic">
+                      "{grievance.feedback.comments}"
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Submitted on: {formatDate(grievance.feedback.submittedAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Timeline */}
           {/* Intervention & Activity History */}

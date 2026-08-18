@@ -102,7 +102,7 @@ export function LoginPage() {
         navigate('/admin');
       } else {
         localStorage.setItem('suvas_user_role', 'citizen');
-        const target = fromPath || '/file-grievance';
+        const target = fromPath || '/dashboard';
         navigate(target, { replace: true });
       }
     }, 1200);
@@ -209,13 +209,24 @@ export function LoginPage() {
                 <Button type="submit" className="w-full" disabled={phone.length < 10} isLoading={isLoading}>
                   Send OTP
                 </Button>
-                <div className="text-center mt-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {selectedRole === 'super_admin' && <span>Super Admin Demo: Use <span className="font-semibold">7777777777</span></span>}
-                    {selectedRole === 'admin' && <span>Admin Demo: Use <span className="font-semibold">9999999999</span></span>}
-                    {selectedRole === 'citizen' && <span>Citizen Demo: Use <span className="font-semibold">8888888888</span></span>}
-                  </p>
-                  <button type="button" onClick={() => setStep('role')} className="mt-3 text-sm text-primary dark:text-blue-400 font-medium hover:underline">
+                <div className="text-center mt-4 flex flex-col items-center">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-left w-full max-w-sm">
+                    {selectedRole === 'super_admin' && <div className="text-center">Super Admin Demo: Use <span className="font-semibold">7777777777</span></div>}
+                    {selectedRole === 'citizen' && <div className="text-center">Citizen Demo: Use <span className="font-semibold">8888888888</span></div>}
+                    {selectedRole === 'admin' && (
+                      <div className="flex flex-col gap-1 p-3 bg-gray-100 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <span className="font-semibold border-b border-gray-200 dark:border-gray-700 pb-1 mb-1 text-gray-700 dark:text-gray-300 text-center">Available Admin Logins</span>
+                        <div className="flex flex-col gap-1.5 text-[11px] mt-1">
+                          <div className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">UPPCL / Electricity</span> <span className="font-mono font-semibold bg-white dark:bg-black px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">9999999999</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">PWD</span> <span className="font-mono font-semibold bg-white dark:bg-black px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">2222222222</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">Water Works</span> <span className="font-mono font-semibold bg-white dark:bg-black px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">3333333333</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">Cyber Cell</span> <span className="font-mono font-semibold bg-white dark:bg-black px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">4444444444</span></div>
+                          <div className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">District Magistrate (DM)</span> <span className="font-mono font-semibold bg-white dark:bg-black px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 shadow-sm">5555555555</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button type="button" onClick={() => setStep('role')} className="mt-4 text-sm text-primary dark:text-blue-400 font-medium hover:underline">
                     Back to Roles
                   </button>
                 </div>

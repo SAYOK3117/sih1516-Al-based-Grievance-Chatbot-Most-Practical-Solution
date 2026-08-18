@@ -138,6 +138,7 @@ export function SuperAdminGrievances() {
     if (sla === 'Overdue') score += 40;
     if (isHighOrCrit) score += 30;
     if (!g.assignedAdminId) score += 15;
+    if (g.reopened) score += 50;
     
     return score;
   }
@@ -150,6 +151,7 @@ export function SuperAdminGrievances() {
     let overdue = 0;
     let critical = 0;
     let unassigned = 0;
+    let reopened = 0;
 
     grievances.forEach(g => {
       if (g.status === 'Pending' || g.status === 'Filed') pending++;
@@ -159,9 +161,10 @@ export function SuperAdminGrievances() {
       if (getSLAStatus(g) === 'Overdue' && g.status !== 'Resolved') overdue++;
       if (g.priority === 'Critical' && g.status !== 'Resolved') critical++;
       if (!g.assignedAdminId && g.status !== 'Resolved') unassigned++;
+      if (g.reopened && g.status !== 'Resolved') reopened++;
     });
 
-    return { total: grievances.length, pending, inProgress, resolved, overdue, critical, unassigned };
+    return { total: grievances.length, pending, inProgress, resolved, overdue, critical, unassigned, reopened };
   }, [grievances]);
 
   // Pagination
@@ -195,7 +198,7 @@ export function SuperAdminGrievances() {
             </div>
 
             {/* Summary KPI Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
               {[
                 { label: 'Total', value: summary.total, color: 'text-gray-900 dark:text-white' },
                 { label: 'Pending', value: summary.pending, color: 'text-purple-600 dark:text-purple-400' },
@@ -203,7 +206,8 @@ export function SuperAdminGrievances() {
                 { label: 'Resolved', value: summary.resolved, color: 'text-green-600 dark:text-green-400' },
                 { label: 'Overdue', value: summary.overdue, color: 'text-red-600 dark:text-red-400', isAlert: true },
                 { label: 'Critical', value: summary.critical, color: 'text-orange-600 dark:text-orange-400', isAlert: true },
-                { label: 'Unassigned', value: summary.unassigned, color: 'text-yellow-600 dark:text-yellow-400', isAlert: true }
+                { label: 'Unassigned', value: summary.unassigned, color: 'text-yellow-600 dark:text-yellow-400', isAlert: true },
+                { label: 'Reopened', value: summary.reopened, color: 'text-rose-600 dark:text-rose-400', isAlert: true }
               ].map((item, idx) => (
                 <div key={idx} className="bg-white dark:bg-[#141C27] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center">
                   <span className={`text-2xl font-bold ${item.color} flex items-center gap-1.5`}>
@@ -279,6 +283,7 @@ export function SuperAdminGrievances() {
                       <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Priority</th>
                       <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status & SLA</th>
                       <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Assignment</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reopen Status</th>
                       <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap text-right">Action</th>
                     </tr>
                   </thead>
@@ -358,6 +363,15 @@ export function SuperAdminGrievances() {
                                 }`}>
                                   Unassigned
                                 </span>
+                              )}
+                            </td>
+                            <td className="p-4 align-top">
+                              {g.reopened ? (
+                                <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                                  <AlertTriangle size={12} /> Reopened
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-600 text-xs font-medium">-</span>
                               )}
                             </td>
                             <td className="p-4 align-top text-right">

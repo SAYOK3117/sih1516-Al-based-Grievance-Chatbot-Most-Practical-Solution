@@ -40,7 +40,7 @@ export function GrievanceTrackingPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const hiddenReceiptRef = useRef<HTMLDivElement>(null);
   
-  const { grievances, addMessage } = useStore();
+  const { grievances, addMessage, submitFeedback } = useStore();
   const currentUserRole = localStorage.getItem('suvas_user_role');
   const grievance = grievances.find(g => g.id === id);
 
@@ -164,7 +164,7 @@ export function GrievanceTrackingPage() {
       )}
 
       {/* Hidden receipt for PDF capture */}
-      <div className="fixed top-[-9999px] left-[-9999px]">
+      <div className="absolute top-0 left-0 opacity-0 pointer-events-none z-[-50]">
         <div ref={hiddenReceiptRef} className="w-[800px] bg-white text-black p-8">
           <AcknowledgementReceipt grievance={grievance} />
         </div>
@@ -314,6 +314,54 @@ export function GrievanceTrackingPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Citizen Feedback Section */}
+          {grievance.status === 'Resolved' && currentUserRole !== 'Admin' && !grievance.feedback && (
+            <Card className="border-t-4 border-t-primary shadow-sm bg-purple-50/50 dark:bg-purple-900/10">
+              <CardContent className="p-6 text-center">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">How satisfied are you with the resolution?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Your feedback helps us improve. If you're not satisfied, we will reopen the case with high priority.</p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Button variant="outline" className="flex flex-col items-center gap-2 p-6 h-auto hover:bg-green-50 hover:border-green-200 dark:hover:bg-green-900/20" onClick={() => submitFeedback(grievance.id, 'Satisfied')}>
+                    <span className="text-3xl">😊</span>
+                    <span>Satisfied</span>
+                  </Button>
+                  <Button variant="outline" className="flex flex-col items-center gap-2 p-6 h-auto hover:bg-yellow-50 hover:border-yellow-200 dark:hover:bg-yellow-900/20" onClick={() => submitFeedback(grievance.id, 'Good')}>
+                    <span className="text-3xl">😐</span>
+                    <span>Good</span>
+                  </Button>
+                  <Button variant="outline" className="flex flex-col items-center gap-2 p-6 h-auto hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-900/20" onClick={() => {
+                    const comment = prompt("Please tell us why you are not satisfied so we can reopen and investigate:");
+                    if (comment !== null) {
+                       submitFeedback(grievance.id, 'Not Satisfied', comment);
+                       alert("Your grievance has been reopened and escalated with critical priority.");
+                    }
+                  }}>
+                    <span className="text-3xl">😠</span>
+                    <span>Not Satisfied</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {grievance.feedback && (
+            <Card className="bg-gray-50 dark:bg-[#1A2332] border-gray-100 dark:border-gray-800">
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Citizen Feedback</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">
+                    {grievance.feedback.rating === 'Satisfied' ? '😊' : grievance.feedback.rating === 'Good' ? '😐' : '😠'}
+                  </span>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">Rated: {grievance.feedback.rating}</p>
+                    {grievance.feedback.comments && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">"{grievance.feedback.comments}"</p>}
+                    <p className="text-xs text-gray-500 mt-1">Submitted on: {new Date(grievance.feedback.submittedAt).toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar Info */}

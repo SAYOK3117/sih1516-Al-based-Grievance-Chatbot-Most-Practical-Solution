@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: 'Namaste! I am your AI assistant. How can I help you today?', sender: 'ai' }
+    { id: 1, text: 'Namaste! I am Navya, your AI assistant for Nagrik Setu. How can I help you today?', sender: 'ai' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -19,53 +20,104 @@ export function ChatbotWidget() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
-    // Add user message
-    const userMsg = { id: Date.now(), text: inputValue, sender: 'user' };
+    const userText = inputValue;
+    const userMsg = { id: Date.now(), text: userText, sender: 'user' };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const systemPrompt = `You are Navya, the official AI Assistant for Nagrik Setu, the AI-assisted citizen grievance redressal platform.
+Your job is to help citizens understand how to use the platform. Be concise, polite, and helpful. Use simple language.
+
+Context about the platform:
+- To file a complaint, users should click on the "File Complaint" link in the navigation bar. They can provide a description (using text or voice), upload photos/videos, and tag their location using the interactive map. The AI will automatically route it to the right department.
+- To check the status of a complaint, users can click on "Track Status" in the navigation bar and enter their Grievance ID, or they can log in as a Citizen and go to "My Dashboard" to see all their complaints.
+- If a grievance is marked as "Resolved" but the citizen is not satisfied, they can submit feedback from the Track Status page, which will automatically reopen the case and escalate it to the Super Admin with Critical priority.
+- Citizens can login using the demo number 8888888888.
+- The platform uses AI for automatic duplicate detection, department routing, and priority assignment.
+- Do not provide code or technical details. Focus on guiding the citizen.`;
+
+      const apiMessages = [
+        { role: "system", content: systemPrompt },
+        ...messages.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
+        { role: "user", content: userText }
+      ];
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: apiMessages,
+          max_tokens: 1000
+        })
+      });
+
+      const data = await response.json();
+      const botText = data.choices?.[0]?.message?.content || "I'm sorry, I couldn't process that right now.";
+      
+      setMessages((prev) => [...prev, { id: Date.now() + 1, text: botText, sender: 'ai' }]);
+    } catch (error) {
+      console.error("Chatbot API Error:", error);
+      setMessages((prev) => [...prev, { id: Date.now() + 1, text: "I'm having trouble connecting to the server. Please try again later.", sender: 'ai' }]);
+    } finally {
       setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: "I understand you have a query. Let me connect you to the right department or help you file a grievance.",
-          sender: 'ai'
-        }
-      ]);
-    }, 1500);
+    }
   };
 
-  const handleQuickReply = (text: string) => {
-    setInputValue(text);
-    // Slight delay before sending to simulate user clicking then sending
-    setTimeout(() => {
-      // In a real app, you might want to call handleSend directly here
-      // But since handleSend relies on state that might not be updated yet,
-      // we'll duplicate the logic for quick replies to ensure it works.
-      const userMsg = { id: Date.now(), text, sender: 'user' };
-      setMessages((prev) => [...prev, userMsg]);
-      setInputValue('');
-      setIsTyping(true);
+  const handleQuickReplyAction = async (text: string) => {
+    const userMsg = { id: Date.now(), text, sender: 'user' };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsTyping(true);
+
+    try {
+      const systemPrompt = `You are Navya, the official AI Assistant for Nagrik Setu, the AI-assisted citizen grievance redressal platform.
+Your job is to help citizens understand how to use the platform. Be concise, polite, and helpful. Use simple language.
+
+Context about the platform:
+- To file a complaint, users should click on the "File Complaint" link in the navigation bar. They can provide a description (using text or voice), upload photos/videos, and tag their location using the interactive map. The AI will automatically route it to the right department.
+- To check the status of a complaint, users can click on "Track Status" in the navigation bar and enter their Grievance ID, or they can log in as a Citizen and go to "My Dashboard" to see all their complaints.
+- If a grievance is marked as "Resolved" but the citizen is not satisfied, they can submit feedback from the Track Status page, which will automatically reopen the case and escalate it to the Super Admin with Critical priority.
+- Citizens can login using the demo number 8888888888.
+- The platform uses AI for automatic duplicate detection, department routing, and priority assignment.
+- Do not provide code or technical details. Focus on guiding the citizen.`;
+
+      const apiMessages = [
+        { role: "system", content: systemPrompt },
+        ...messages.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
+        { role: "user", content: text }
+      ];
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: apiMessages,
+          max_tokens: 1000
+        })
+      });
+
+      const data = await response.json();
+      const botText = data.choices?.[0]?.message?.content || "I'm sorry, I couldn't process that right now.";
       
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            text: `Sure, I can help you with "${text}". Please provide more details.`,
-            sender: 'ai'
-          }
-        ]);
-      }, 1500);
-    }, 100);
+      setMessages((prev) => [...prev, { id: Date.now() + 1, text: botText, sender: 'ai' }]);
+    } catch (error) {
+      console.error("Chatbot API Error:", error);
+      setMessages((prev) => [...prev, { id: Date.now() + 1, text: "I'm having trouble connecting to the server. Please try again later.", sender: 'ai' }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -73,9 +125,15 @@ export function ChatbotWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed z-50 md:bottom-8 md:right-8 bottom-24 right-4 bg-primary text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:bg-primary-hover transition-all duration-300 animate-pulse-subtle flex items-center justify-center ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
+        className={`fixed z-50 md:bottom-8 md:right-8 bottom-24 right-4 bg-primary text-white w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:bg-primary-hover transition-all duration-300 animate-pulse-subtle flex items-center justify-center overflow-hidden ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
       >
-        <MessageSquare size={24} />
+        {true ? (
+          <div className="w-10 h-10 flex items-center justify-center">
+            <DotLottieReact src="/animations/chatbot.json" loop autoplay style={{ width: '100%', height: '100%' }} />
+          </div>
+        ) : (
+          <MessageSquare size={24} />
+        )}
       </button>
 
       {/* Chat Window */}
@@ -89,7 +147,7 @@ export function ChatbotWidget() {
               <Bot size={20} />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">Nagrik Setu Assistant</h3>
+              <h3 className="font-semibold text-sm">Navya - AI Assistant</h3>
               <p className="text-xs text-blue-100">Usually replies instantly</p>
             </div>
           </div>
@@ -134,14 +192,14 @@ export function ChatbotWidget() {
         {/* Quick Replies */}
         {messages.length === 1 && !isTyping && (
           <div className="p-3 bg-gray-50 dark:bg-[#0F1620] flex flex-wrap gap-2">
-            <button onClick={() => handleQuickReply('File a complaint')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
-              File a complaint
+            <button onClick={() => handleQuickReplyAction('How do I file a complaint?')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
+              How do I file a complaint?
             </button>
-            <button onClick={() => handleQuickReply('Check status')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
-              Check status
+            <button onClick={() => handleQuickReplyAction('How can I check my status?')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
+              How can I check my status?
             </button>
-            <button onClick={() => handleQuickReply('Talk to a human')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
-              Talk to a human
+            <button onClick={() => handleQuickReplyAction('What if I am not satisfied with the resolution?')} className="text-xs bg-white dark:bg-surface-dark border border-primary/20 dark:border-blue-900/50 text-primary dark:text-blue-400 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors shadow-sm">
+              Not satisfied with resolution?
             </button>
           </div>
         )}

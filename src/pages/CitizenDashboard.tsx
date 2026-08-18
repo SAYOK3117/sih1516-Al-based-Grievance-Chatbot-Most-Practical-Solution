@@ -1,17 +1,41 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Clock, Building2, Layers, MapPin } from 'lucide-react';
+import { Search, Clock, Building2, Layers, MapPin, Download, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
 import { useStore } from '../lib/store';
 import { EscalationBadge } from '../components/ui/EscalationBadge';
+import { AcknowledgementReceipt } from '../components/ui/AcknowledgementReceipt';
+import { generateGrievancePdf } from '../lib/pdfUtils';
 
 export function CitizenDashboard() {
   const { grievances } = useStore();
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const hiddenReceiptRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPdf = async (grievanceId: string) => {
+    setDownloadingId(grievanceId);
+    // Give React a moment to render the specific receipt before capturing
+    setTimeout(async () => {
+      if (!hiddenReceiptRef.current) {
+        setDownloadingId(null);
+        return;
+      }
+      try {
+        await generateGrievancePdf(hiddenReceiptRef.current, grievanceId);
+      } catch (err) {
+        console.error('PDF generation error:', err);
+        alert("Couldn't generate PDF, please try again.");
+      } finally {
+        setDownloadingId(null);
+      }
+    }, 100);
+  };
 
   const filteredGrievances = grievances.filter(g => {
     if (activeTab === 'Filed' && g.status !== 'Filed') return false;
@@ -159,6 +183,15 @@ export function CitizenDashboard() {
                     </div>
                   </div>
                   <div className="flex md:flex-col justify-end gap-2 border-t md:border-t-0 pt-4 md:pt-0">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full text-sm text-gray-600 dark:text-gray-400"
+                      onClick={() => handleDownloadPdf(grievance.id)}
+                      disabled={downloadingId === grievance.id}
+                    >
+                      {downloadingId === grievance.id ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Download size={16} className="mr-2" />}
+                      Receipt
+                    </Button>
                     <Link to={`/track?id=${grievance.id}`}>
                       <Button variant="outline" className="w-full text-sm">
                         Track Status
@@ -171,6 +204,15 @@ export function CitizenDashboard() {
           ))
         )}
       </div>
+
+      {/* Hidden receipt for PDF capture */}
+      {downloadingId && (
+        <div className="absolute top-0 left-0 opacity-0 pointer-events-none z-[-50]">
+          <div ref={hiddenReceiptRef} className="w-[800px] bg-white text-black p-8">
+            <AcknowledgementReceipt grievance={grievances.find(g => g.id === downloadingId)!} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

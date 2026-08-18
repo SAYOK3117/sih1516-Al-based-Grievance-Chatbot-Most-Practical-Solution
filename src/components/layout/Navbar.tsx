@@ -28,9 +28,12 @@ export function Navbar() {
     }
   };
 
+  const role = localStorage.getItem('suvas_user_role');
+
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'File Complaint', path: '/file-grievance' },
+    ...(role === 'citizen' ? [{ name: 'My Dashboard', path: '/dashboard' }] : []),
     { name: 'Track Status', path: '/track' },
     { name: 'Transparency', path: '/transparency' },
   ];
@@ -85,12 +88,24 @@ export function Navbar() {
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </Button>
           <div className="hidden md:block">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="ml-2">
-                <User size={16} className="mr-2" />
-                Login / Admin
-              </Button>
-            </Link>
+            {role ? (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="ml-2" onClick={() => {
+                  localStorage.removeItem('suvas_user_role');
+                  localStorage.removeItem('loggedInAdmin');
+                }}>
+                  <User size={16} className="mr-2" />
+                  Logout
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="ml-2">
+                  <User size={16} className="mr-2" />
+                  Login / Admin
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

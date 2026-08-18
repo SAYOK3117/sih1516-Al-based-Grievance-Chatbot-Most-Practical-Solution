@@ -440,7 +440,7 @@ export function FileGrievancePage() {
 
         {/* Hidden receipt for PDF capture */}
         {grievance && (
-          <div className="fixed top-[-9999px] left-[-9999px]">
+          <div className="absolute top-0 left-0 opacity-0 pointer-events-none z-[-50]">
             <div ref={hiddenReceiptRef} className="w-[800px] bg-white text-black p-8">
               <AcknowledgementReceipt grievance={grievance} />
             </div>

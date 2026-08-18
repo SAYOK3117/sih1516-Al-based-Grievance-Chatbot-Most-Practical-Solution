@@ -131,6 +131,11 @@ export interface Grievance {
   activities?: GrievanceActivity[];
   voiceAudioUrl?: string;
   attachments?: Attachment[];
+  feedback?: {
+    rating: 'Satisfied' | 'Good' | 'Not Satisfied';
+    comments?: string;
+    submittedAt: string;
+  };
 }
 
 interface StoreContextType {
@@ -155,6 +160,7 @@ interface StoreContextType {
   readNotificationIds: string[];
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: (ids: string[]) => void;
+  submitFeedback: (grievanceId: string, rating: 'Satisfied' | 'Good' | 'Not Satisfied', comments?: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -689,6 +695,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setEscalations(prev => prev.map(e => e.id === id ? { ...e, status } : e));
   };
 
+  const submitFeedback = (grievanceId: string, rating: 'Satisfied' | 'Good' | 'Not Satisfied', comments?: string) => {
+    setGrievances(prev => prev.map(g => {
+      if (g.id === grievanceId) {
+        const feedback = { rating, comments, submittedAt: new Date().toISOString() };
+        
+        if (rating === 'Not Satisfied') {
+          return {
+            ...g,
+            feedback,
+            status: 'In Progress',
+            priority: 'Critical',
+            reopened: true,
+            reopenedAt: feedback.submittedAt,
+            reopenReason: 'Citizen not satisfied with resolution',
+            reopenedBy: 'Citizen',
+            activities: [
+              ...(g.activities || []),
+              { id: generateId(), type: 'reopened', actor: 'Citizen', description: 'Grievance reopened due to "Not Satisfied" feedback', timestamp: feedback.submittedAt }
+            ],
+            auditTimeline: [
+              { id: generateId(), timestamp: new Date().toLocaleString(), event: 'Grievance REOPENED (Not Satisfied). Priority escalated to Critical.', actor: 'Citizen' },
+              ...(g.auditTimeline || [])
+            ]
+          };
+        }
+        
+        return {
+          ...g,
+          feedback,
+          auditTimeline: [
+            { id: generateId(), timestamp: new Date().toLocaleString(), event: `Citizen feedback submitted: ${rating}`, actor: 'Citizen' },
+            ...(g.auditTimeline || [])
+          ]
+        };
+      }
+      return g;
+    }));
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -713,6 +758,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         readNotificationIds,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        submitFeedback,
       }}
     >
       {children}
